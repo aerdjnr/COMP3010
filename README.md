@@ -38,5 +38,14 @@ Assumptions:
 
 **200 - List out the IAM users that accessed an AWS service (successfully or unsuccessfully) in Frothly's AWS environment.**
 
-![200 Evidence Piece](Evidence/200Level/200.png)
 
+
+
+
+Initial query
+```spl
+index="botsv3" sourcetype="*aws*" *iam*
+```
+Identified sourcetype "aws:cloudtrail" as most common found, with a field labelled "userIdentity.type" tied to each event:
+
+\[200 Evidence Piece](Evidence/200Level/200SPL\_Refined.png)
