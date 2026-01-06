@@ -40,12 +40,32 @@ Assumptions:
 
 
 
-
-
 Initial query
 ```spl
 index="botsv3" sourcetype="*aws*" *iam*
 ```
 Identified sourcetype "aws:cloudtrail" as most common found, with a field labelled "userIdentity.type" tied to each event:
 
-\[200 Evidence Piece](Evidence/200Level/200SPL\_Refined.png)
+[200 Evidence Piece](Evidence/200Level/200SPL\_Refined.png)
+
+
+**201 - What field would you use to alert that AWS API activity has occurred without MFA (Multi-Factor Authentication)?**
+
+
+Initial query
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" *MFA*
+```
+
+No immediate evidence, but scrubbing through an event showed the field
+"userIdentity.sessionContext.attributes.mfaAuthenticated":
+
+[201 Evidence Piece](Evidence/200Level/201_)
+
+Through many variates of SPL(to ensure that syntax was not the reason for any missing values) there only seemed to be the value "false" which indicates that no MFA has been implemented. As a tier 2 SOC analyst, processes and escalations would be as follows:
+* Identify the scope, which has already been performed (all IAM users do not have MFA implemented.
+* Validate the data, if needed, cross referencing with other data to back up the claim
+* Risk assessment, identifying that a lack of MFA is a security risk
+* Escalate to tier 3 for policy enforcement
+* Set an alert for future events of this manner
+
