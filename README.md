@@ -1,156 +1,196 @@
-# COMP3010 BOTSv3 Analysis
+# BOTSv3 SOC Report
 
+## Contents
 
+- [Introduction](#introduction)
+- [Installation & Data Preparation](#installation--data-preparation)
+- [SOC Roles](#soc-roles)
+- [BOTSv3 Analysis](#botsv3-analysis)
+  - [200](#200)
+  - [201](#201)
+  - [202](#202)
+  - [203](#203)
+  - [204](#204)
+  - [205](#205)
+  - [215](#215)
+- [Conclusion](#conclusion)
+- [Appendix](#appendix)
 
-Note: The "Research" field is a separate investigation into the SPL of Splunk and some interesting data (which are out of the scope of this report)
+---
 
+## Introduction
 
+This investigation is taken from the perspective of a Security Operations Centre (SOC) which is responsible for monitoring, detecting, and responding to threats across an organisations network architecture. It is an essential form of security revolved around visibility, leveraging assets and processes which aims to identify malicious activity, assess risk, and manage incident response in line with an organisation’s security objectives.
 
-Video Presentation: ()
+The report is structured around the **Boss of the SOC v3 (BOTSv3)** dataset, with references to the BOTSv3 questions to evaluate the simulated attack and provide possible solutions against further attempts.
 
+### Objectives
 
+- Assess the effectiveness of Splunk's SIEM capability against a simulated attack.
+- Understand and map the attack using the BOTSv3 questions as a roadmap alongside the Cyber Kill Chain (CKC) methodology.
+- Reflect on SOC processes, escalation paths, and strategic incident handling.
 
-#### Introduction
+### Assumptions
 
+- A single attack campaign is taking place.
+- All logs are complete and untampered.
+- Situational evidence may be used beyond direct BOTSv3 context clues.
 
+---
 
-This investigation is taken from the perspective of a Security Operations Centre (SOC) which is responsible for monitoring, detecting, and responding to threats across an organisations network architecture. It is an essential form of security revolved around visibility, leveraging assets and processes which aims to identify malicious activity, assess risk, and manage incident response inline with an organisations security objectives.
+## Installation & Data Preparation
 
-The report is structured around the "Boss of the SOC v3" BOTSv3 dataset, with references to the BOTSv3 questions to evaluate the simulated attack and provide possible solutions against further attempts.
+A small form factor (SFF) system with a multi-core CPU, NVMe storage, and sufficient RAM was used to support sustained indexing and search workloads. Proxmox VE was selected to host the Splunk instance as an isolated SOC analysis environment, enabling snapshot-based recovery and reproducibility.
 
+Splunk was deployed on an Ubuntu Desktop VM to reduce overhead compared to Windows while still allowing efficient analyst interaction through a web-based interface. Ubuntu was cross-referenced with official Splunk compatibility documentation.
 
+Splunk Enterprise **10.0.2** was selected to align with modern SOC workflows. A standalone deployment was used, as distributed components would add unnecessary complexity. Add-ons were intentionally limited to preserve analytical clarity and derive evidence directly from raw SPL queries.
 
-The primary objectives are as follows:
+---
 
-* Assess the effectiveness of Splunk's SIEM capability against a simulated attack
-* Understand and map the attack using the BOTSv3 questions as a roadmap alongside the Cyber Kill Chain (CKC) methodology
-* Reflect on SOC processes, escalation paths, and strategic incident handling, comparing available toolsets and providing recommended improvements for the SOC
+## SOC Roles
 
+### Tier 1 SOC Analyst
 
+- Continuous log and alert monitoring
+- Triage alerts and identify false positives
+- Document events in ticketing systems
+- Escalate verified threats to Tier 2
 
-Assumptions:
+### Tier 2 SOC Analyst
 
-* There is a single attack campaign taking place, and that all evidence found is directly attributable to this campaign
-* Analysis of logs occurs post-incident, all logs are complete, and have not been tampered with or altered.
-* Where applicable, situational evidence may be incorporated to support the investigation using queries or techniques that aren't directly gained through context clues within the BOTSv3 questions
+- Deep investigation of escalated events
+- Scope determination and threat intelligence analysis
+- Lead containment and recovery efforts
+- Escalate high-impact incidents to Tier 3
 
+### Tier 3 SOC Analyst
 
+- Handle major incidents
+- Perform or oversee vulnerability assessments and penetration testing
+- Recommend security tooling and monitoring improvements
 
-**200 - List out the IAM users that accessed an AWS service (successfully or unsuccessfully) in Frothly's AWS environment.**
+---
 
+## BOTSv3 Analysis
 
+### 200
 
-Initial query
+**List IAM users that accessed AWS services**
+
 ```spl
 index="botsv3" sourcetype="*aws*" *iam*
 ```
-Identified sourcetype "aws:cloudtrail" as most common found, with a field labelled "userIdentity.type" tied to each event:
 
-![200 Evidence Piece](Evidence/200Level/200SPL\_Refined.png)
-bstoll,btun,splunk_access,web_admin
-Note: "bstoll" and "btun" go by Bud Stoll and Billy Tun respectively
-
-**201 - What field would you use to alert that AWS API activity has occurred without MFA (Multi-Factor Authentication)?**
-
-
-Initial query
 ```spl
-index="botsv3" sourcetype="aws:cloudtrail" *MFA*
+index="botsv3" sourcetype="aws:cloudtrail" *iam*
 ```
 
-No immediate evidence, but scrubbing through an event showed the field
-"userIdentity.sessionContext.attributes.mfaAuthenticated":
+```spl
+index="botsv3" sourcetype="aws:cloudtrail"
+| stats count BY userIdentity.type
+```
 
-![201 Evidence Piece](Evidence/200Level/201_NoConsole_SPL_Refined.png)
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" userIdentity.type="IAMUser"
+| stats count BY userIdentity.userName
+```
+
+Identified IAM users:
+- bstoll
+- btun
+- splunk_access
+- web_admin
+
+---
+
+### 201
+
+**Detect AWS API activity without MFA**
+
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" *mfa*
+```
+
+```spl
+index="botsv3" sourcetype="aws:cloudtrail"
+| stats count BY eventType
+```
+
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" eventType="AwsApiCall"
+```
+
+Field used:
+```
 userIdentity.sessionContext.attributes.mfaAuthenticated
-
-
-Through many variations of SPL queries (to ensure that syntax was not the reason for any missing values) there only seemed to be the value "false" which indicates that no MFA has been implemented. As a tier 2 SOC analyst, processes and escalations would be as follows:
-* Identify the scope, which has already been performed (all IAM users do not have MFA implemented.
-* Validate the data, if needed, cross referencing with other data to back up the claim
-* Risk assessment, identifying that a lack of MFA is a security risk
-* Escalate to tier 3 for policy enforcement
-* Set an alert for future events of this manner
-
-
-**202 - What is the processor number used on the web servers?**
-
-
-
-Initial query:
-```spl
-index="botsv3" *amd* OR *intel* | stats count BY sourcetype
-```
-Yielded 32 unique source types. Seeing as the target is processor based the source type "hardware" stood out.
-
-![202 Evidence Piece](Evidence/200Level/202.png)
-E5-2676
-
-**203 - Bud accidentally makes an S3 bucket publicly accessible. What is the event ID of the API Call that enabled public access?
-
-
-Initial query:
-```spl
-index="botsv3" *API*
-```
-led to sourcetype="aws:cloudtrail" first as it had the most events matching
-
-```spl
-index="botsv3" sourcetype="aws:cloudtrail" *bucket* | stats count BY eventName
 ```
 
-To see if any event names correlate. eventName="PutBucketAcl"
+---
 
-![203 Evidence Piece](Evidence/200Level/203_PublicAPIcall_EventID.png)
+### 202
 
-ab45689d-69cd-41e7-8705-5350402cf7ac
+**Processor number used on web servers**
 
+```spl
+index="botsv3" *amd* OR *intel*
+| stats count BY sourcetype
+```
 
-In this particular scenario, it highlights a detection gap. There would be an automatic alert fired with a medium to high severity, in which a tier 1 SOC would triage the event, pull supporting data, and respond by removing public access. Checking the only other available log, it was rectified at 14:57pm (approx. 56 mins later)
+```spl
+index="botsv3" sourcetype="hardware"
+```
 
+CPU Type: **E5-2676**
 
-**204 - What is the name of S3 bucket that was made publicly accessible?**
+---
 
+### 203
 
-Using the final query from 203
+**Event ID enabling public S3 bucket access**
+
 ```spl
 index="botsv3" sourcetype="aws:cloudtrail" eventName="PutBucketAcl"
 ```
-and knowing what event to look into:
 
-![204 Evidence Piece](Evidence/200Level/204_S3BucketName.png)
-frothlywebcode
-
-**205 - What is the name of the text file that was successfully uploaded into the S3 bucket while it was publicly accessible?**
-
-Knowing the timestamp of the API call, we can check the s3 bucket logs
-
-```spl
-index="botsv3" sourcetype="aws:s3:accesslogs"
+Event ID:
 ```
-By checking at the timestamp of the API call, a put request with a text file is made:
-
-![205 Evidence Piece](Evidence/200Level/205_BlackBox.png)
-
-From the context of the question, a search for ".txt" would have been more time efficient, but derives the answer from the question. Instead, considering that the logs consist of API requests, it is more appropriate to instead search by API request methods
-
-OPEN_BUCKET_PLEASE_FIX.txt
-
-
-**215 - What is the FQDN of the endpoint that is running a different Windows operating system than the others?**
-
-Initial query:
-```spl
-index="botsv3" os | stats count BY sourcetype
+Ab45689d-69cd-41e7-8705-5350402cf7ac
 ```
-The first to stand out was "WinHostMon" which searching up in a web browser conveys that it holds information on windows devices
 
-Noticing that the source of the first available event was "driver" I expanded the source field and found "operatingsystem"
+---
 
-```spl
-index="botsv3" sourcetype="winhostmon" source=operatingsystem 
-| stats count BY host OS
-```
-Immediately "BSTOLL-L" stood out as the only host with a unique OS
+### 204
 
-![215 Evidence Piece](Evidence/200Level/215_ComputerName_SPL_Refined.png)
+**Public S3 bucket name**
+
+Bucket name: **frothleywebcode**
+
+---
+
+### 205
+
+**File uploaded while bucket was public**
+
+File name: **OPEN_BUCKET_PLEASE_FIX.txt**
+
+---
+
+### 215
+
+**FQDN of endpoint with different Windows edition**
+
+FQDN: **BSTOLL-L.froth.ly**
+
+---
+
+## Conclusion
+
+The BOTSv3 analysis revealed multiple security weaknesses, most notably a delay in remediating a publicly exposed S3 bucket. Improvements should focus on real-time alerting, faster response times, stricter access controls, and MFA enforcement.
+
+---
+
+## Appendix
+
+Cyber Kill Chain®, Lockheed Martin  
+https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
