@@ -41,17 +41,24 @@ The report is structured around the **Boss of the SOC v3 (BOTSv3)** dataset, wit
 
 ## Installation & Data Preparation
 
-A small form factor (SFF) system with a multi-core CPU, NVMe storage, and sufficient RAM was used to support sustained indexing and search workloads. Proxmox VE was selected to host the Splunk instance as an isolated SOC analysis environment, enabling snapshot-based recovery and reproducibility.
+Starting with the initial hardware, I went with a small form factor (SFF) computer with multi-core CPU, NVMe storage, and RAM – all of which was allocated to support sustained indexing and search workloads. 
+As for the operating system, Proxmox VE was used to treat the Splunk instance as an isolated, quick-to-recover SOC analysis platform, allowing for improved environment reproducibility through snapshots – beneficial given the defined scope.
 
-Splunk was deployed on an Ubuntu Desktop VM to reduce overhead compared to Windows while still allowing efficient analyst interaction through a web-based interface. Ubuntu was cross-referenced with official Splunk compatibility documentation.
+The Splunk instance was deployed in an Ubuntu Desktop VM due to the lower resource overhead with an OS such as Windows 10/11, but with a more efficient analyst interaction over a server-only OS (such as ubuntu server) due to the presence of a web-based management/search panel which is preferred for a single-user post-incident analysis.
+Without the presence of a graphical environment, additional configuration would be present without improving analytical outcomes in this context. The Ubuntu version was cross referenced with official Splunk documentation to ensure compatibility.
 
-Splunk Enterprise **10.0.2** was selected to align with modern SOC workflows. A standalone deployment was used, as distributed components would add unnecessary complexity. Add-ons were intentionally limited to preserve analytical clarity and derive evidence directly from raw SPL queries.
+As for the Splunk instance, Enterprise 10.0.2 (latest stable release available at the time of the report) was chosen to ensure SPL functionality and to align with modern SOC workflows. A standalone deployment method was selected due to the nature of the task, with index and search capabilities located on a single instance being best suited to the investigative focus; a distributed deployment would serve no additional purpose and only increase complexity and resource overhead. 
+I deliberately limited the use of add-ons to preserve analytical clarity and reduce the risk of misinterpretation and instead derive evidence directly from SPL queries of the raw dataset. 
+
+Collectively, these design choices focus on single-user post-incident analysis over likeness with an enterprise scale, live SOC environment. In such a setting, a distributed Splunk deployment would typically be used, with forwarders (with an OS such as Ubuntu Server) collecting and collating logs to centralised indexers, alongside granular role-based access control (such as by tier of SOC analyst, engineers, and admins).
+Dedicated search heads would then provide the interface for which SOC analysts may conduct investigations via the Splunk web interface. In such a context, dashboards would be utilised for live monitoring, reporting, and communication – prioritising operational visibility and response coordination, which I do not need in this instance.
+
 
 ---
 
 ## SOC Roles
 
-Throughout the BOTSv3 analysis, I will make references to SOC roles, and their processes/escalation procedures\[2\], \[3\]. The following is a breakdown of the main roles involved:
+Throughout the BOTSv3 analysis, I will make references to SOC roles, and their processes/escalation procedures\[2\],\[3\]. The following is a breakdown of the main roles involved:
 
 ### Tier 1 SOC Analyst
 
