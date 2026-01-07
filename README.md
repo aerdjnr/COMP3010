@@ -27,7 +27,7 @@ The report is structured around the **Boss of the SOC v3 (BOTSv3)** dataset, wit
 ### Objectives
 
 - Assess the effectiveness of Splunk's SIEM capability against a simulated attack.
-- Understand and map the attack using the BOTSv3 questions as a roadmap alongside the Cyber Kill Chain (CKC) methodology.
+- Understand and map the attack using the BOTSv3 questions as a roadmap alongside the Cyber Kill Chain (CKC) methodology\[1\].
 - Reflect on SOC processes, escalation paths, and strategic incident handling.
 
 ### Assumptions
@@ -49,6 +49,7 @@ Splunk Enterprise **10.0.2** was selected to align with modern SOC workflows. A 
 ---
 
 ## SOC Roles
+Throughout the BOTSv3 analysis, I will make references to SOC roles, and their processes/escalation procedures\[2\], \[3\]. The following is a breakdown of the main roles involved:
 
 ### Tier 1 SOC Analyst
 
@@ -74,9 +75,9 @@ Splunk Enterprise **10.0.2** was selected to align with modern SOC workflows. A 
 
 ## BOTSv3 Analysis
 
-### 200
+### Q1
 
-**List IAM users that accessed AWS services**
+**List out the IAM users that accessed an AWS service (successfully or unsuccessfully) in Frothly’s AWS environment**
 
 ```spl
 index="botsv3" sourcetype="*aws*" *iam*
@@ -96,6 +97,7 @@ index="botsv3" sourcetype="aws:cloudtrail" userIdentity.type="IAMUser"
 | stats count BY userIdentity.userName
 ```
 
+!(Q1 Final Evidence Piece)[Evidence/CourseworkQuestions/Q1_F200_4.png]
 Identified IAM users:
 - bstoll
 - btun
@@ -104,12 +106,12 @@ Identified IAM users:
 
 ---
 
-### 201
+### Q2
 
-**Detect AWS API activity without MFA**
+**What field would you use to alert that AWS API activity has occurred without MFA (Multi-Factor Authentication)?**
 
 ```spl
-index="botsv3" sourcetype="aws:cloudtrail" *mfa*
+index="botsv3" sourcetype="aws:cloudtrail"
 ```
 
 ```spl
@@ -121,16 +123,18 @@ index="botsv3" sourcetype="aws:cloudtrail"
 index="botsv3" sourcetype="aws:cloudtrail" eventType="AwsApiCall"
 ```
 
+!(Q2 Final Evidence Piece)[Evidence/CourseworkQuestions/Q2_F201_1.png]
+
 Field used:
-```
 userIdentity.sessionContext.attributes.mfaAuthenticated
-```
+
+
 
 ---
 
-### 202
+### Q3
 
-**Processor number used on web servers**
+**What is the processor number used on the web servers?**
 
 ```spl
 index="botsv3" *amd* OR *intel*
@@ -140,57 +144,136 @@ index="botsv3" *amd* OR *intel*
 ```spl
 index="botsv3" sourcetype="hardware"
 ```
+!(Q3 Final Evidence Piece)[Evidence/CourseworkQuestions/Q3_F202_2.png]
 
-CPU Type: **E5-2676**
+CPU Type: 
+E5-2676
 
 ---
 
-### 203
+### Q4
 
-**Event ID enabling public S3 bucket access**
+**Bud Accidentally makes an S3 bucket publicly accessible. What is the event ID of the API call that enabled public access?**
+
+```spl
+index="botsv3" *bucket* 
+| stats count BY sourcetype
+```
+
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" 
+| stats count BY eventName
+```
 
 ```spl
 index="botsv3" sourcetype="aws:cloudtrail" eventName="PutBucketAcl"
 ```
+!(Q4 Final Evidence Piece)[Evidence/CourseworkQuestions/Q4_F203_4.png]
 
 Event ID:
-```
 Ab45689d-69cd-41e7-8705-5350402cf7ac
+
+---
+
+### Q5
+
+**What is Bud's username?**
+
+From Q1, there were 2 users bstoll and btun, using the query
+
+```spl
+Index=“botsv3” bstoll
+```
+Yielded an smtp event containing a "receiver" field with both of their full names in:
+
+!(Q5 Final Evidence Piece)[Evidence/CourseworkQuestions/Q5_F200_5.png]
+
+Bud Stoll's username:
+bstoll
+
+---
+
+### Q6
+
+**What is the name of the S3 bucket that was made publicly accessible?**
+
+```spl
+index="botsv3" sourcetype="aws:cloudtrail" eventName="PutBucketAcl"
+```
+Using the same query from Q4, we can see a subfield in "requestParameters" called bucketName:
+!(Q6 Evidence Piece)[Evidence/CourseworkQuestions/Q6_F204_1.png]
+
+Bucket name:
+frothleywebcode
+
+---
+
+### Q7
+
+**What is the name of the text file that was successfully uploaded into the S3 bucket while it was publicly accessible?**
+
+```spl
+index="botsv3" sourcetype="*aws*” *bucket* 
+| stats count BY sourcetype
 ```
 
----
+```spl
+Index=”botsv3” sourcetype=“aws:s3:accesslogs”
+| reverse
+```
+After searching through the logs starting from the exact timestamp of the moment the bucket was made public, at 14:02:44PM, a PUT API request was made with the file name “OPEN_BUCKET_PLEASE_FIX.txt”
 
-### 204
+!(Q7 Final Evidence Piece)[Evidence/CourseworkQuestions/Q7_F205_2.png]
 
-**Public S3 bucket name**
-
-Bucket name: **frothleywebcode**
-
----
-
-### 205
-
-**File uploaded while bucket was public**
-
-File name: **OPEN_BUCKET_PLEASE_FIX.txt**
+File name:
+OPEN_BUCKET_PLEASE_FIX.txt
 
 ---
 
-### 215
+### Q8
 
-**FQDN of endpoint with different Windows edition**
+**What is the FQDN of the endpoint that is running a different Windows operating system edition than the others?**
 
-FQDN: **BSTOLL-L.froth.ly**
+```spl
+index="botsv3" *window*
+```
+
+```spl
+index=”botsv3” sourcetype=“WinHostMon”
+```
+
+```spl
+index=”botsv3” sourcetype=“WinHostMon” source=”operatingsystem”
+```
+
+```spl
+Index=”botsv3” sourcetype=”WinHostMon” source=”operatingsystem”
+| stats count BY host OS
+```
+
+```spl
+index=“botsv3” “bstoll-l”
+```
+The first result of the final query identified the FQDN within the "ComputerName"
+
+!(Q8 Evidence Piece)[Evidence/CourseworkQuestions/Q8_F215_5.png]
+
+FQDN:
+BSTOLL-L.froth.ly
 
 ---
 
 ## Conclusion
 
-The BOTSv3 analysis revealed multiple security weaknesses, most notably a delay in remediating a publicly exposed S3 bucket. Improvements should focus on real-time alerting, faster response times, stricter access controls, and MFA enforcement.
+Through this analysis of the BOTSv3 dataset, there is a collection of evidence that highlights several critical security weaknesses across both defensive and reactive controls.  A key finding was the approximately 56-minute delay in remediating the publicly exposed S3 bucket, which indicates flaws in Frothly’s reactive security posture. In a compliant, live SOC environment, an incident of this severity would be expected to trigger near-immediate alerting and response mechanisms, reducing the exposure window significantly, possibly preventing the upload of a .txt file from an unauthorised user which occurred approximately 2 minutes later.
+However, the ability to collect and analyse a high level of enriched data following the incident demonstrates a degree of maturity in Frothly’s incident response and logging capabilities. These findings can be leveraged proactively to inform targeted vulnerability assessments and strengthen security controls moving forward. Specific improvements should focus on enhancing real-time alerting, reducing response times, stricter access controls, and the enforcement of MFA. By addressing these areas Frothly can improve its overall resilience and reduce the likelihood and impact of similar incidents in the future.
+
 
 ---
 
 ## Appendix
 
-Cyber Kill Chain®, Lockheed Martin  
-https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
+\[1\]	‘Cyber Kill Chain®’, Lockheed Martin. [Online]. Available: https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
+\[2\]	‘Security Operations Center (SOC) Roles and Responsibilities’, Palo Alto Networks. \[Online\]. Available: https://www.paloaltonetworks.com/cyberpedia/soc-roles-and-responsibilities
+\[3\]	C. Kidd, ‘What Is a SOC? Security Operations Centers: A Complete Overview’, Splunk. \[Online\]. Available: https://www.splunk.com/en_us/blog/learn/soc-security-operation-center.html
+
