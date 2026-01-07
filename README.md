@@ -1,5 +1,7 @@
 # BOTSv3 SOC Report
 
+Unlisted YouTube video:()
+
 ## Contents
 
 - [Introduction](#introduction)
@@ -281,7 +283,6 @@ In a compliant, live SOC environment, an incident of this severity would be expe
 However, the ability to collect and analyse a high level of enriched data following the incident demonstrates a degree of maturity in Frothly’s incident response and logging capabilities. These findings can be leveraged proactively to inform targeted vulnerability assessments and strengthen security controls moving forward. 
 
 Specific improvements should focus on enhancing real-time alerting, reducing response times, stricter access controls, and the enforcement of MFA. By addressing these areas Frothly can improve its overall resilience and reduce the likelihood and impact of similar incidents in the future.
-
 
 ---
 
