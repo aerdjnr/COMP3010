@@ -49,6 +49,7 @@ Splunk Enterprise **10.0.2** was selected to align with modern SOC workflows. A 
 ---
 
 ## SOC Roles
+
 Throughout the BOTSv3 analysis, I will make references to SOC roles, and their processes/escalation procedures\[2\], \[3\]. The following is a breakdown of the main roles involved:
 
 ### Tier 1 SOC Analyst
@@ -97,7 +98,7 @@ index="botsv3" sourcetype="aws:cloudtrail" userIdentity.type="IAMUser"
 | stats count BY userIdentity.userName
 ```
 
-!(Q1 Final Evidence Piece)[Evidence/CourseworkQuestions/Q1_F200_4.png]
+![Q1 Final Evidence Piece](Evidence/CourseworkQuestions/Q1_F200_4.png)
 Identified IAM users:
 - bstoll
 - btun
@@ -123,7 +124,7 @@ index="botsv3" sourcetype="aws:cloudtrail"
 index="botsv3" sourcetype="aws:cloudtrail" eventType="AwsApiCall"
 ```
 
-!(Q2 Final Evidence Piece)[Evidence/CourseworkQuestions/Q2_F201_1.png]
+![Q2 Final Evidence Piece](Evidence/CourseworkQuestions/Q2_F201_1.png)
 
 Field used:
 userIdentity.sessionContext.attributes.mfaAuthenticated
@@ -144,7 +145,7 @@ index="botsv3" *amd* OR *intel*
 ```spl
 index="botsv3" sourcetype="hardware"
 ```
-!(Q3 Final Evidence Piece)[Evidence/CourseworkQuestions/Q3_F202_2.png]
+![Q3 Final Evidence Piece](Evidence/CourseworkQuestions/Q3_F202_2.png)
 
 CPU Type: 
 E5-2676
@@ -168,7 +169,7 @@ index="botsv3" sourcetype="aws:cloudtrail"
 ```spl
 index="botsv3" sourcetype="aws:cloudtrail" eventName="PutBucketAcl"
 ```
-!(Q4 Final Evidence Piece)[Evidence/CourseworkQuestions/Q4_F203_4.png]
+![Q4 Final Evidence Piece](Evidence/CourseworkQuestions/Q4_F203_4.png)
 
 Event ID:
 Ab45689d-69cd-41e7-8705-5350402cf7ac
@@ -186,7 +187,7 @@ Index=“botsv3” bstoll
 ```
 Yielded an smtp event containing a "receiver" field with both of their full names in:
 
-!(Q5 Final Evidence Piece)[Evidence/CourseworkQuestions/Q5_F200_5.png]
+![Q5 Final Evidence Piece](Evidence/CourseworkQuestions/Q5_F200_5.png)
 
 Bud Stoll's username:
 bstoll
@@ -201,7 +202,7 @@ bstoll
 index="botsv3" sourcetype="aws:cloudtrail" eventName="PutBucketAcl"
 ```
 Using the same query from Q4, we can see a subfield in "requestParameters" called bucketName:
-!(Q6 Evidence Piece)[Evidence/CourseworkQuestions/Q6_F204_1.png]
+![Q6 Evidence Piece](Evidence/CourseworkQuestions/Q6_F204_1.png)
 
 Bucket name:
 frothleywebcode
@@ -223,7 +224,7 @@ Index=”botsv3” sourcetype=“aws:s3:accesslogs”
 ```
 After searching through the logs starting from the exact timestamp of the moment the bucket was made public, at 14:02:44PM, a PUT API request was made with the file name “OPEN_BUCKET_PLEASE_FIX.txt”
 
-!(Q7 Final Evidence Piece)[Evidence/CourseworkQuestions/Q7_F205_2.png]
+![Q7 Final Evidence Piece](Evidence/CourseworkQuestions/Q7_F205_2.png)
 
 File name:
 OPEN_BUCKET_PLEASE_FIX.txt
@@ -256,7 +257,7 @@ index=“botsv3” “bstoll-l”
 ```
 The first result of the final query identified the FQDN within the "ComputerName"
 
-!(Q8 Evidence Piece)[Evidence/CourseworkQuestions/Q8_F215_5.png]
+![Q8 Evidence Piece](Evidence/CourseworkQuestions/Q8_F215_5.png)
 
 FQDN:
 BSTOLL-L.froth.ly
@@ -265,8 +266,13 @@ BSTOLL-L.froth.ly
 
 ## Conclusion
 
-Through this analysis of the BOTSv3 dataset, there is a collection of evidence that highlights several critical security weaknesses across both defensive and reactive controls.  A key finding was the approximately 56-minute delay in remediating the publicly exposed S3 bucket, which indicates flaws in Frothly’s reactive security posture. In a compliant, live SOC environment, an incident of this severity would be expected to trigger near-immediate alerting and response mechanisms, reducing the exposure window significantly, possibly preventing the upload of a .txt file from an unauthorised user which occurred approximately 2 minutes later.
-However, the ability to collect and analyse a high level of enriched data following the incident demonstrates a degree of maturity in Frothly’s incident response and logging capabilities. These findings can be leveraged proactively to inform targeted vulnerability assessments and strengthen security controls moving forward. Specific improvements should focus on enhancing real-time alerting, reducing response times, stricter access controls, and the enforcement of MFA. By addressing these areas Frothly can improve its overall resilience and reduce the likelihood and impact of similar incidents in the future.
+Through this analysis of the BOTSv3 dataset, there is a collection of evidence that highlights several critical security weaknesses across both defensive and reactive controls.  A key finding was the approximately 56-minute delay in remediating the publicly exposed S3 bucket, which indicates flaws in Frothly’s reactive security posture. 
+
+In a compliant, live SOC environment, an incident of this severity would be expected to trigger near-immediate alerting and response mechanisms, reducing the exposure window significantly, possibly preventing the upload of a .txt file from an unauthorised user which occurred approximately 2 minutes later.
+
+However, the ability to collect and analyse a high level of enriched data following the incident demonstrates a degree of maturity in Frothly’s incident response and logging capabilities. These findings can be leveraged proactively to inform targeted vulnerability assessments and strengthen security controls moving forward. 
+
+Specific improvements should focus on enhancing real-time alerting, reducing response times, stricter access controls, and the enforcement of MFA. By addressing these areas Frothly can improve its overall resilience and reduce the likelihood and impact of similar incidents in the future.
 
 
 ---
@@ -274,6 +280,8 @@ However, the ability to collect and analyse a high level of enriched data follow
 ## Appendix
 
 \[1\]	‘Cyber Kill Chain®’, Lockheed Martin. [Online]. Available: https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html
+
 \[2\]	‘Security Operations Center (SOC) Roles and Responsibilities’, Palo Alto Networks. \[Online\]. Available: https://www.paloaltonetworks.com/cyberpedia/soc-roles-and-responsibilities
+
 \[3\]	C. Kidd, ‘What Is a SOC? Security Operations Centers: A Complete Overview’, Splunk. \[Online\]. Available: https://www.splunk.com/en_us/blog/learn/soc-security-operation-center.html
 
