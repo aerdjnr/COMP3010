@@ -1,6 +1,6 @@
 # BOTSv3 SOC Report
 
-Unlisted YouTube video:()
+
 
 ## Contents
 
